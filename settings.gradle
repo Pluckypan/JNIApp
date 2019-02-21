@@ -1,1 +1,1 @@
-include ':app', ':library', ':colorcam'
+include ':app', ':library', ':colorcam', ':magicfilter', ':magicam'

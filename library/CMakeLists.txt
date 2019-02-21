@@ -5,7 +5,7 @@ include_directories(src/main/jni)
 aux_source_directory(src/main/jni SRC_LIST)
 # 设置jni编译文件so输出目录
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build/jniLibs/${ANDROID_ABI})
-# 编译echo.cpp并生成echo.cpp
+# 编译echo.cpp并生成echo.so
 add_library(echo SHARED src/main/jni/echo.cpp ${SRC_LIST})
 # 找到预编译库 log_lib
 find_library(log-lib log)
