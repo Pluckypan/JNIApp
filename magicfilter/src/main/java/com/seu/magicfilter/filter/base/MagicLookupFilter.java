@@ -1,11 +1,10 @@
 package com.seu.magicfilter.filter.base;
 
+import android.content.Context;
 import android.opengl.GLES20;
 
-import com.seu.magicfilter.MagicEngine;
 import com.seu.magicfilter.filter.base.gpuimage.GPUImageFilter;
-import com.seu.magicfilter.utils.MagicParams;
-import com.seu.magicfilter.utils.OpenGlUtils;
+import com.seu.magicfilter.utils.OpenGLUtils;
 
 public class MagicLookupFilter extends GPUImageFilter {
 
@@ -45,14 +44,15 @@ public class MagicLookupFilter extends GPUImageFilter {
             " }";
 
     protected String table;
-
-    public MagicLookupFilter(String table) {
+    protected Context mContext;
+    public MagicLookupFilter(Context context,String table) {
         super(NO_FILTER_VERTEX_SHADER,LOOKUP_FRAGMENT_SHADER);
+        this.mContext = context;
         this.table = table;
     }
     
     public int mLookupTextureUniform;
-    public int mLookupSourceTexture = OpenGlUtils.NO_TEXTURE;
+    public int mLookupSourceTexture = OpenGLUtils.NO_TEXTURE;
     
     protected void onInit(){
 		super.onInit();
@@ -63,7 +63,7 @@ public class MagicLookupFilter extends GPUImageFilter {
 		super.onInitialized();
     	runOnDraw(new Runnable(){
     		public void run(){
-    			mLookupSourceTexture = OpenGlUtils.loadTexture(MagicParams.context, table);
+    			mLookupSourceTexture = OpenGLUtils.loadTexture(mContext, table);
     		}
     	});
     }

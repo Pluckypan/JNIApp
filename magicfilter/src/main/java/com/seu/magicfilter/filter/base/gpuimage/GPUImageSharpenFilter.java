@@ -107,8 +107,8 @@ public class GPUImageSharpenFilter extends GPUImageFilter {
     }
 
     @Override
-    public void onInputSizeChanged(final int width, final int height) {
-        super.onInputSizeChanged(width, height);
+    public void onOutputSizeChanged(final int width, final int height) {
+        super.onOutputSizeChanged(width, height);
         setFloat(mImageWidthFactorLocation, 1.0f / width);
         setFloat(mImageHeightFactorLocation, 1.0f / height);
     }

@@ -1,148 +1,144 @@
 package com.seu.magicfilter.camera;
 
 import java.io.IOException;
+import java.util.List;
 
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.Size;
-import android.view.SurfaceView;
-
-import com.seu.magicfilter.camera.utils.CameraUtils;
 
 public class CameraEngine {
-    private static Camera camera = null;
-    private static int cameraID = 0;
-    private static SurfaceTexture surfaceTexture;
-    private static SurfaceView surfaceView;
+	private static Camera mCamera = null;
+	private static int mCameraID = 0;
 
-    public static Camera getCamera(){
-        return camera;
-    }
+	public static Camera getCamera(){
+		return mCamera;
+	}
 
-    public static boolean openCamera(){
-        if(camera == null){
-            try{
-                camera = Camera.open(cameraID);
-                setDefaultParameters();
-                return true;
-            }catch(RuntimeException e){
-                return false;
-            }
-        }
-        return false;
-    }
+	public static boolean openCamera(){
+		if(mCamera == null){
+			try{
+				mCamera = Camera.open(mCameraID);
+				setDefaultParameters();
+				return true;
+			}catch(RuntimeException e){
+				return false;
+			}
+		}
+		return false;
+	}
 
-    public static boolean openCamera(int id){
-        if(camera == null){
-            try{
-                camera = Camera.open(id);
-                cameraID = id;
-                setDefaultParameters();
-                return true;
-            }catch(RuntimeException e){
-                return false;
-            }
-        }
-        return false;
-    }
+	public static void releaseCamera(){
+		if(mCamera != null){
+			mCamera.setPreviewCallback(null);
+			mCamera.stopPreview();
+			mCamera.release();
+			mCamera = null;
+		}
+	}
 
-    public static void releaseCamera(){
-        if(camera != null){
-            camera.setPreviewCallback(null);
-            camera.stopPreview();
-            camera.release();
-            camera = null;
-        }
-    }
+	public void resumeCamera(){
+		openCamera();
+	}
 
-    public void resumeCamera(){
-        openCamera();
-    }
+	public void setParameters(Parameters parameters){
+		mCamera.setParameters(parameters);
+	}
 
-    public void setParameters(Parameters parameters){
-        camera.setParameters(parameters);
-    }
+	public Parameters getParameters(){
+		if(mCamera != null)
+			mCamera.getParameters();
+		return null;
+	}
 
-    public Parameters getParameters(){
-        if(camera != null)
-            camera.getParameters();
-        return null;
-    }
-
-    public static void switchCamera(){
-        releaseCamera();
-        cameraID = cameraID == 0 ? 1 : 0;
-        openCamera(cameraID);
-        startPreview(surfaceTexture);
-    }
-
-    private static void setDefaultParameters(){
-        Parameters parameters = camera.getParameters();
-        if (parameters.getSupportedFocusModes().contains(
+	private static void setDefaultParameters(){
+		Parameters parameters = mCamera.getParameters();
+		if (parameters.getSupportedFocusModes().contains(
                 Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
             parameters.setFocusMode(Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
         }
-        Size previewSize = CameraUtils.getLargePreviewSize(camera);
-        parameters.setPreviewSize(previewSize.width, previewSize.height);
-        Size pictureSize = CameraUtils.getLargePictureSize(camera);
-        parameters.setPictureSize(pictureSize.width, pictureSize.height);
-        parameters.setRotation(90);
-        camera.setParameters(parameters);
-    }
+		Size previewSize = getLargePreviewSize();
+		parameters.setPreviewSize(1280, 720);
+		Size pictureSize = getLargePictureSize();
+		parameters.setPictureSize(pictureSize.width, pictureSize.height);
+		mCamera.setParameters(parameters);
+	}
 
-    private static Size getPreviewSize(){
-        return camera.getParameters().getPreviewSize();
-    }
+	private static Size getLargePreviewSize(){
+		if(mCamera != null){
+			List<Size> sizes = mCamera.getParameters().getSupportedPreviewSizes();
+			Size temp = sizes.get(0);
+				for(int i = 1;i < sizes.size();i ++){
+					if(temp.width < sizes.get(i).width)
+						temp = sizes.get(i);
+			}
+			return temp;
+		}
+		return null;
+	}
 
-    private static Size getPictureSize(){
-        return camera.getParameters().getPictureSize();
-    }
+	private static Size getLargePictureSize(){
+		if(mCamera != null){
+			List<Size> sizes = mCamera.getParameters().getSupportedPictureSizes();
+			Size temp = sizes.get(0);
+				for(int i = 1;i < sizes.size();i ++){
+					float scale = (float)(sizes.get(i).height) / sizes.get(i).width;
+					if(temp.width < sizes.get(i).width && scale < 0.6f && scale > 0.5f)
+						temp = sizes.get(i);
+			}
+			return temp;
+		}
+		return null;
+	}
 
-    public static void startPreview(SurfaceTexture surfaceTexture){
-        if(camera != null)
-            try {
-                camera.setPreviewTexture(surfaceTexture);
-                CameraEngine.surfaceTexture = surfaceTexture;
-                camera.startPreview();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-    }
+	public static Size getPreviewSize(){
+		return mCamera.getParameters().getPreviewSize();
+	}
 
-    public static void startPreview(){
-        if(camera != null)
-            camera.startPreview();
-    }
+	public static void startPreview(SurfaceTexture surfaceTexture){
+		try {
+			mCamera.setPreviewTexture(surfaceTexture);
+			mCamera.startPreview();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
-    public static void stopPreview(){
-        camera.stopPreview();
-    }
+	public static void startPreview(){
+		if(mCamera != null)
+			mCamera.startPreview();
+	}
 
-    public static void setRotation(int rotation){
-        Camera.Parameters params = camera.getParameters();
+	public static void stopPreview(){
+		mCamera.stopPreview();
+	}
+
+	public static CameraInfo getCameraInfo(){
+		CameraInfo cameraInfo = new CameraInfo();
+		Camera.getCameraInfo(mCameraID, cameraInfo);
+		return cameraInfo;
+	}
+
+	public static int getOrientation(){
+		CameraInfo cameraInfo = new CameraInfo();
+		Camera.getCameraInfo(mCameraID, cameraInfo);
+		return cameraInfo.orientation;
+	}
+
+	public static boolean isFlipHorizontal(){
+		return CameraEngine.getCameraInfo().facing == CameraInfo.CAMERA_FACING_FRONT;
+	}
+
+	public static void setRotation(int rotation){
+		Camera.Parameters params = mCamera.getParameters();
         params.setRotation(rotation);
-        camera.setParameters(params);
-    }
+        mCamera.setParameters(params);
+	}
 
-    public static void takePicture(Camera.ShutterCallback shutterCallback, Camera.PictureCallback rawCallback,
-                                   Camera.PictureCallback jpegCallback){
-        camera.takePicture(shutterCallback, rawCallback, jpegCallback);
-    }
-
-    public static com.seu.magicfilter.camera.utils.CameraInfo getCameraInfo(){
-        com.seu.magicfilter.camera.utils.CameraInfo info = new com.seu.magicfilter.camera.utils.CameraInfo();
-        Size size = getPreviewSize();
-        CameraInfo cameraInfo = new CameraInfo();
-        Camera.getCameraInfo(cameraID, cameraInfo);
-        info.previewWidth = size.width;
-        info.previewHeight = size.height;
-        info.orientation = cameraInfo.orientation;
-        info.isFront = cameraID == 1 ? true : false;
-        size = getPictureSize();
-        info.pictureWidth = size.width;
-        info.pictureHeight = size.height;
-        return info;
-    }
+	public static void takePicture(Camera.ShutterCallback shutterCallback, Camera.PictureCallback rawCallback,
+			Camera.PictureCallback jpegCallback){
+		mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
+	}
 }

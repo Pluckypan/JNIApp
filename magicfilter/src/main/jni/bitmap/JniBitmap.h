@@ -1,5 +1,5 @@
-#ifndef _JNI_BITMAP_H_
-#define _JNI_BITMAP_H_
+#ifndef _JNIBITMAP_H_
+#define _JNIBITMAP_H_
 #include <android/bitmap.h>
 
 typedef struct

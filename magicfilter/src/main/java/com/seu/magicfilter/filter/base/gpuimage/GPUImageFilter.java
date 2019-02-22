@@ -19,14 +19,14 @@ package com.seu.magicfilter.filter.base.gpuimage;
 import android.graphics.PointF;
 import android.opengl.GLES20;
 
-import com.seu.magicfilter.utils.OpenGlUtils;
-import com.seu.magicfilter.utils.Rotation;
-import com.seu.magicfilter.utils.TextureRotationUtil;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.LinkedList;
+
+import com.seu.magicfilter.utils.OpenGLUtils;
+import com.seu.magicfilter.utils.Rotation;
+import com.seu.magicfilter.utils.TextureRotationUtil;
 
 public class GPUImageFilter {
     public static final String NO_FILTER_VERTEX_SHADER = "" +
@@ -57,20 +57,20 @@ public class GPUImageFilter {
     protected int mGLAttribPosition;
     protected int mGLUniformTexture;
     protected int mGLAttribTextureCoordinate;
-
-    protected int mIntputWidth;
-    protected int mIntputHeight;
+    protected int mGLStrengthLocation;
+    protected int mOutputWidth;
+    protected int mOutputHeight;
     protected boolean mIsInitialized;
     protected FloatBuffer mGLCubeBuffer;
     protected FloatBuffer mGLTextureBuffer;
-    protected int mOutputWidth, mOutputHeight;
+    protected int mSurfaceWidth, mSurfaceHeight;
     
     public GPUImageFilter() {
         this(NO_FILTER_VERTEX_SHADER, NO_FILTER_FRAGMENT_SHADER);
     }
 
     public GPUImageFilter(final String vertexShader, final String fragmentShader) {
-        mRunOnDraw = new LinkedList<>();
+        mRunOnDraw = new LinkedList<Runnable>();
         mVertexShader = vertexShader;
         mFragmentShader = fragmentShader;
         
@@ -92,16 +92,18 @@ public class GPUImageFilter {
     }
 
     protected void onInit() {
-        mGLProgId = OpenGlUtils.loadProgram(mVertexShader, mFragmentShader);
+        mGLProgId = OpenGLUtils.loadProgram(mVertexShader, mFragmentShader);
         mGLAttribPosition = GLES20.glGetAttribLocation(mGLProgId, "position");
         mGLUniformTexture = GLES20.glGetUniformLocation(mGLProgId, "inputImageTexture");
         mGLAttribTextureCoordinate = GLES20.glGetAttribLocation(mGLProgId,
                 "inputTextureCoordinate");
+        mGLStrengthLocation = GLES20.glGetUniformLocation(mGLProgId,
+                "strength");
         mIsInitialized = true;
     }
 
     protected void onInitialized() {
-
+    	setFloat(mGLStrengthLocation, 1.0f);
     }
 
     public final void destroy() {
@@ -113,9 +115,9 @@ public class GPUImageFilter {
     protected void onDestroy() {
     }
 
-    public void onInputSizeChanged(final int width, final int height) {
-        mIntputWidth = width;
-        mIntputHeight = height;
+    public void onOutputSizeChanged(final int width, final int height) {
+        mOutputWidth = width;
+        mOutputHeight = height;
     }
 
     public int onDrawFrame(final int textureId, final FloatBuffer cubeBuffer,
@@ -123,7 +125,7 @@ public class GPUImageFilter {
         GLES20.glUseProgram(mGLProgId);
         runPendingOnDrawTasks();
         if (!mIsInitialized) {
-            return OpenGlUtils.NOT_INIT;
+            return OpenGLUtils.NOT_INIT;
         }
 
         cubeBuffer.position(0);
@@ -133,7 +135,7 @@ public class GPUImageFilter {
         GLES20.glVertexAttribPointer(mGLAttribTextureCoordinate, 2, GLES20.GL_FLOAT, false, 0,
                 textureBuffer);
         GLES20.glEnableVertexAttribArray(mGLAttribTextureCoordinate);
-        if (textureId != OpenGlUtils.NO_TEXTURE) {
+        if (textureId != OpenGLUtils.NO_TEXTURE) {
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
             GLES20.glUniform1i(mGLUniformTexture, 0);
@@ -144,14 +146,14 @@ public class GPUImageFilter {
         GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
         onDrawArraysAfter();
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-        return OpenGlUtils.ON_DRAWN;
+        return OpenGLUtils.ON_DRAWN;
     }
     
     public int onDrawFrame(final int textureId) {
 		GLES20.glUseProgram(mGLProgId);
 		runPendingOnDrawTasks();
 		if (!mIsInitialized) 
-			return OpenGlUtils.NOT_INIT;
+			return OpenGLUtils.NOT_INIT;
 		
 		mGLCubeBuffer.position(0);
 		GLES20.glVertexAttribPointer(mGLAttribPosition, 2, GLES20.GL_FLOAT, false, 0, mGLCubeBuffer);
@@ -160,11 +162,10 @@ public class GPUImageFilter {
 		GLES20.glVertexAttribPointer(mGLAttribTextureCoordinate, 2, GLES20.GL_FLOAT, false, 0,
 		     mGLTextureBuffer);
 		GLES20.glEnableVertexAttribArray(mGLAttribTextureCoordinate);
-
-		if (textureId != OpenGlUtils.NO_TEXTURE) {
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-		    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
-		    GLES20.glUniform1i(mGLUniformTexture, 0);
+		if (textureId != OpenGLUtils.NO_TEXTURE) {
+		 GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+		 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
+		 GLES20.glUniform1i(mGLUniformTexture, 0);
 		}
 		onDrawArraysPre();
 		GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
@@ -172,7 +173,7 @@ public class GPUImageFilter {
 		GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
 		onDrawArraysAfter();
 		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-		return OpenGlUtils.ON_DRAWN;
+		return OpenGLUtils.ON_DRAWN;
 	}
     
     protected void onDrawArraysPre() {}
@@ -188,12 +189,12 @@ public class GPUImageFilter {
         return mIsInitialized;
     }
 
-    public int getIntputWidth() {
-        return mIntputWidth;
+    public int getOutputWidth() {
+        return mOutputWidth;
     }
 
-    public int getIntputHeight() {
-        return mIntputHeight;
+    public int getOutputHeight() {
+        return mOutputHeight;
     }
 
     public int getProgram() {
@@ -306,7 +307,7 @@ public class GPUImageFilter {
     }
 
     public void onDisplaySizeChanged(final int width, final int height) {
-    	mOutputWidth = width;
-    	mOutputHeight = height;
+    	mSurfaceWidth = width;
+    	mSurfaceHeight = height;
     }
 }

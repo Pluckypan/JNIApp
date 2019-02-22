@@ -10,17 +10,16 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build/jniLibs/${ANDROID
 
 add_library(
         # Sets the name of the library.
-        MagicJni
+        MagicSDK
 
         # Sets the library as a shared library.
         SHARED
 
         # Provides a relative path to your source file(s).
-
         src/main/jni/bitmap/Conversion.cpp
         src/main/jni/bitmap/BitmapOperation.cpp
-        src/main/jni/beautify/MagicBeautify.cpp
-        src/main/jni/MagicJni.cpp )
+        src/main/jni/skinsmooth/MagicBeauty.cpp
+        src/main/jni/MagicSDK.cpp )
 
 find_library(
         # Sets the name of the path variable.
@@ -33,7 +32,7 @@ find_library(
 
 target_link_libraries(
         # Specifies the target library.
-        MagicJni
+        MagicSDK
 
         # Links the target library to the log library
         # included in the NDK.
